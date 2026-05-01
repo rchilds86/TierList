@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="TierList">
-<link rel="apple-touch-icon" href="icon.png">
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'%3E%3Crect width='180' height='180' rx='40' fill='%23173a5e'/%3E%3Cellipse cx='90' cy='155' rx='45' ry='8' fill='%230d2a45' opacity='0.6'/%3E%3Crect x='55' y='108' width='70' height='18' rx='4' fill='%231a5cb5'/%3E%3Crect x='48' y='92' width='84' height='22' rx='5' fill='%231e6fd4'/%3E%3Crect x='52' y='72' width='76' height='26' rx='5' fill='%23e8940a'/%3E%3Crect x='58' y='68' width='64' height='20' rx='4' fill='%23f5b800'/%3E%3Cpolygon points='90,74 93,82 102,82 95,87 98,96 90,91 82,96 85,87 78,82 87,82' fill='%23fff' opacity='0.9'/%3E%3Cg transform='translate(42,38) rotate(-15)'%3E%3Crect x='0' y='4' width='36' height='26' rx='3' fill='%23c45a00'/%3E%3Crect x='2' y='2' width='32' height='24' rx='2' fill='%23f5dfa0'/%3E%3Cline x1='18' y1='2' x2='18' y2='26' stroke='%23c8a84b' stroke-width='1.5'/%3E%3Cline x1='6' y1='8' x2='16' y2='8' stroke='%23b8a080' stroke-width='1'/%3E%3Cline x1='6' y1='12' x2='16' y2='12' stroke='%23b8a080' stroke-width='1'/%3E%3Cline x1='6' y1='16' x2='16' y2='16' stroke='%23b8a080' stroke-width='1'/%3E%3Cline x1='20' y1='8' x2='30' y2='8' stroke='%23b8a080' stroke-width='1'/%3E%3Cline x1='20' y1='12' x2='30' y2='12' stroke='%23b8a080' stroke-width='1'/%3E%3Cline x1='20' y1='16' x2='30' y2='16' stroke='%23b8a080' stroke-width='1'/%3E%3C/g%3E%3Cg transform='translate(100,30)'%3E%3Ccircle cx='18' cy='18' r='18' fill='%23888' stroke='%23555' stroke-width='2'/%3E%3Ccircle cx='18' cy='18' r='12' fill='%23666'/%3E%3Ccircle cx='18' cy='18' r='5' fill='%23444'/%3E%3Ccircle cx='13' cy='13' r='2' fill='%23333'/%3E%3Ccircle cx='23' cy='13' r='2' fill='%23333'/%3E%3Ccircle cx='13' cy='23' r='2' fill='%23333'/%3E%3Ccircle cx='23' cy='23' r='2' fill='%23333'/%3E%3Crect x='30' y='14' width='16' height='8' rx='1' fill='%23777' stroke='%23555' stroke-width='1'/%3E%3Crect x='31' y='16' width='3' height='4' fill='%23222'/%3E%3Crect x='35' y='16' width='3' height='4' fill='%23222'/%3E%3Crect x='39' y='16' width='3' height='4' fill='%23222'/%3E%3C/g%3E%3C/svg%3E">
 <title>TierList</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -863,14 +863,33 @@ async function doSearch() {
 }
 
 async function searchBooks(q) {
-  const url = `https://openlibrary.org/search.json?q=${encodeURIComponent(q)}&limit=12&fields=key,title,cover_i,author_name`;
-  const res = await fetch(url);
-  const json = await res.json();
-  return (json.docs || []).map(doc => ({
+  // Google Books first — better coverage and more reliable
+  try {
+    const gbUrl = `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(q)}&maxResults=12&printType=books`;
+    const gbRes = await fetch(gbUrl);
+    const gbJson = await gbRes.json();
+    const gbResults = (gbJson.items || []).map(item => {
+      const info = item.volumeInfo || {};
+      const links = info.imageLinks || {};
+      const thumb = links.thumbnail || links.smallThumbnail || null;
+      return {
+        id: item.id || String(Math.random()),
+        title: info.title || 'Unknown',
+        cover: thumb ? thumb.replace('http://', 'https://') : null
+      };
+    });
+    if (gbResults.length > 0) return gbResults;
+  } catch(e) {}
+
+  // Fall back to Open Library
+  const olUrl = `https://openlibrary.org/search.json?q=${encodeURIComponent(q)}&limit=12&fields=key,title,cover_i`;
+  const olRes = await fetch(olUrl);
+  const olJson = await olRes.json();
+  return (olJson.docs || []).map(doc => ({
     id: doc.key || String(Math.random()),
     title: doc.title || 'Unknown',
     cover: doc.cover_i ? `https://covers.openlibrary.org/b/id/${doc.cover_i}-M.jpg` : null
-  })).filter(Boolean);
+  }));
 }
 
 async function searchMovies(q) {
