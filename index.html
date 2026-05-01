@@ -494,6 +494,14 @@
       <input class="search-input" type="text" id="search-input" placeholder="Search title..." autocomplete="off" autocorrect="off" spellcheck="false">
       <button class="search-btn" id="search-btn">FIND</button>
     </div>
+    <div class="search-row" id="url-row" style="margin-top:8px;display:none;">
+      <input class="search-input" type="url" id="url-input" placeholder="Paste image URL..." autocomplete="off" autocorrect="off" spellcheck="false">
+      <input class="search-input" type="text" id="url-title-input" placeholder="Title..." autocomplete="off" style="max-width:120px;">
+      <button class="search-btn" id="url-btn" style="background:var(--accent2);">ADD</button>
+    </div>
+    <div style="padding:4px 0 0;">
+      <button id="toggle-url" style="background:none;border:none;color:var(--text2);font-size:12px;cursor:pointer;font-family:var(--font-body);padding:0;">+ add by image URL</button>
+    </div>
   </div>
 
   <div class="results-drawer" id="results-drawer">
@@ -939,6 +947,31 @@ function addItem(item) {
 // ── CLOSE DRAWER ─────────────────────────────────────────────
 document.getElementById('results-close').addEventListener('click', () => {
   document.getElementById('results-drawer').classList.remove('open');
+});
+
+// ── URL ADD ───────────────────────────────────────────────────
+document.getElementById('toggle-url').addEventListener('click', () => {
+  const row = document.getElementById('url-row');
+  const btn = document.getElementById('toggle-url');
+  const visible = row.style.display !== 'none';
+  row.style.display = visible ? 'none' : 'flex';
+  btn.textContent = visible ? '+ add by image URL' : '− hide URL input';
+});
+
+document.getElementById('url-btn').addEventListener('click', () => {
+  const url = document.getElementById('url-input').value.trim();
+  const title = document.getElementById('url-title-input').value.trim();
+  if (!url || !title) { showToast('Enter both a URL and title'); return; }
+  const item = {
+    id: 'custom_' + Date.now(),
+    title: title,
+    cover: url
+  };
+  addItem(item);
+  document.getElementById('url-input').value = '';
+  document.getElementById('url-title-input').value = '';
+  document.getElementById('url-row').style.display = 'none';
+  document.getElementById('toggle-url').textContent = '+ add by image URL';
 });
 
 // ── TABS ─────────────────────────────────────────────────────
