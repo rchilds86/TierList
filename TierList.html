@@ -1,0 +1,947 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="TierList">
+<title>TierList</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&display=swap" rel="stylesheet">
+
+<style>
+  /* ── TOKENS ── */
+  :root {
+    --bg: #f5f2ee;
+    --surface: #ffffff;
+    --surface2: #ede9e3;
+    --border: rgba(0,0,0,0.08);
+    --text: #1a1714;
+    --text2: #6b6560;
+    --accent: #c8392b;
+    --accent2: #e8a020;
+    --tab-active: #1a1714;
+    --tab-inactive: #9c9690;
+    --tier-s: #ff4757;
+    --tier-a: #ff8c00;
+    --tier-b: #ffd700;
+    --tier-c: #7bed9f;
+    --tier-d: #70a1ff;
+    --tier-f: #a29bfe;
+    --tier-reading: #fd79a8;
+    --tier-tbr: #b2bec3;
+    --radius: 16px;
+    --radius-sm: 10px;
+    --shadow: 0 2px 16px rgba(0,0,0,0.08);
+    --shadow-lg: 0 8px 40px rgba(0,0,0,0.14);
+    --font-display: 'Bebas Neue', sans-serif;
+    --font-body: 'DM Sans', sans-serif;
+    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #141210;
+      --surface: #1e1c19;
+      --surface2: #2a2723;
+      --border: rgba(255,255,255,0.07);
+      --text: #f0ece6;
+      --text2: #8a8580;
+      --tab-active: #f0ece6;
+      --tab-inactive: #5a5550;
+      --shadow: 0 2px 16px rgba(0,0,0,0.4);
+      --shadow-lg: 0 8px 40px rgba(0,0,0,0.6);
+    }
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  html, body {
+    height: 100%;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-body);
+    overflow: hidden;
+    overscroll-behavior: none;
+  }
+
+  /* ── LAYOUT ── */
+  #app {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    padding-top: var(--safe-top);
+    padding-bottom: var(--safe-bottom);
+  }
+
+  /* ── HEADER ── */
+  header {
+    padding: 18px 20px 0;
+    flex-shrink: 0;
+  }
+
+  .app-title {
+    font-family: var(--font-display);
+    font-size: 38px;
+    letter-spacing: 2px;
+    line-height: 1;
+    color: var(--text);
+  }
+
+  .app-title span {
+    color: var(--accent);
+  }
+
+  /* ── TABS ── */
+  .tabs {
+    display: flex;
+    gap: 4px;
+    padding: 14px 20px 0;
+    flex-shrink: 0;
+  }
+
+  .tab {
+    font-family: var(--font-display);
+    font-size: 20px;
+    letter-spacing: 1.5px;
+    color: var(--tab-inactive);
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 6px 14px;
+    border-radius: 8px;
+    transition: color 0.2s, background 0.2s;
+    position: relative;
+  }
+
+  .tab.active {
+    color: var(--tab-active);
+    background: var(--surface2);
+  }
+
+  /* ── SEARCH BAR ── */
+  .search-wrap {
+    padding: 14px 20px 10px;
+    flex-shrink: 0;
+  }
+
+  .search-row {
+    display: flex;
+    gap: 10px;
+  }
+
+  .search-input {
+    flex: 1;
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 12px 16px;
+    font-family: var(--font-body);
+    font-size: 15px;
+    color: var(--text);
+    outline: none;
+    transition: border-color 0.2s;
+    -webkit-appearance: none;
+  }
+
+  .search-input::placeholder { color: var(--text2); }
+  .search-input:focus { border-color: var(--accent); }
+
+  .search-btn {
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: var(--radius-sm);
+    padding: 12px 18px;
+    font-family: var(--font-display);
+    font-size: 17px;
+    letter-spacing: 1px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: opacity 0.15s;
+    -webkit-appearance: none;
+  }
+
+  .search-btn:active { opacity: 0.8; }
+
+  /* ── SEARCH RESULTS DRAWER ── */
+  .results-drawer {
+    display: none;
+    flex-direction: column;
+    background: var(--surface);
+    border-radius: var(--radius);
+    margin: 0 20px;
+    box-shadow: var(--shadow-lg);
+    max-height: 260px;
+    overflow: hidden;
+    flex-shrink: 0;
+    border: 1.5px solid var(--border);
+    z-index: 10;
+  }
+
+  .results-drawer.open { display: flex; }
+
+  .results-header {
+    padding: 12px 16px 8px;
+    font-family: var(--font-display);
+    font-size: 14px;
+    letter-spacing: 1px;
+    color: var(--text2);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-shrink: 0;
+  }
+
+  .results-close {
+    background: none;
+    border: none;
+    color: var(--text2);
+    font-size: 18px;
+    cursor: pointer;
+    padding: 2px 6px;
+  }
+
+  .results-scroll {
+    display: flex;
+    gap: 12px;
+    padding: 12px 16px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    flex-shrink: 0;
+  }
+
+  .results-scroll::-webkit-scrollbar { display: none; }
+
+  .result-item {
+    flex-shrink: 0;
+    width: 80px;
+    cursor: pointer;
+    transition: transform 0.15s;
+    text-align: center;
+  }
+
+  .result-item:active { transform: scale(0.93); }
+
+  .result-cover {
+    width: 80px;
+    height: 120px;
+    object-fit: cover;
+    border-radius: 8px;
+    background: var(--surface2);
+    display: block;
+  }
+
+  .result-cover-placeholder {
+    width: 80px;
+    height: 120px;
+    border-radius: 8px;
+    background: var(--surface2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28px;
+  }
+
+  .result-title {
+    font-size: 11px;
+    color: var(--text2);
+    margin-top: 5px;
+    line-height: 1.3;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+  }
+
+  /* ── TIER LIST SCROLL AREA ── */
+  .tier-list {
+    flex: 1;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    padding: 10px 20px 20px;
+    scrollbar-width: none;
+  }
+
+  .tier-list::-webkit-scrollbar { display: none; }
+
+  /* ── TIER BLOCK ── */
+  .tier-block {
+    margin-bottom: 14px;
+    border-radius: var(--radius);
+    overflow: hidden;
+    box-shadow: var(--shadow);
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+  }
+
+  .tier-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 14px;
+    border-bottom: 1.5px solid var(--border);
+  }
+
+  .tier-badge {
+    font-family: var(--font-display);
+    font-size: 28px;
+    letter-spacing: 1px;
+    width: 40px;
+    text-align: center;
+    line-height: 1;
+  }
+
+  .tier-label {
+    font-family: var(--font-body);
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text2);
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+  }
+
+  .tier-count {
+    margin-left: auto;
+    font-size: 12px;
+    color: var(--text2);
+    background: var(--surface2);
+    border-radius: 20px;
+    padding: 2px 8px;
+  }
+
+  .tier-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(72px, 1fr));
+    gap: 10px;
+    padding: 12px;
+    min-height: 56px;
+  }
+
+  .tier-grid.drag-over {
+    background: var(--surface2);
+    outline: 2px dashed var(--accent);
+    outline-offset: -4px;
+    border-radius: 8px;
+  }
+
+  /* ── CARD ── */
+  .card {
+    position: relative;
+    cursor: grab;
+    border-radius: 8px;
+    overflow: hidden;
+    aspect-ratio: 2/3;
+    background: var(--surface2);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    transition: transform 0.15s, box-shadow 0.15s;
+    touch-action: none;
+  }
+
+  .card:active { transform: scale(0.95); box-shadow: 0 6px 20px rgba(0,0,0,0.25); }
+  .card.dragging { opacity: 0.4; }
+
+  .card img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    pointer-events: none;
+  }
+
+  .card-no-img {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    background: var(--surface2);
+    pointer-events: none;
+  }
+
+  .card-remove {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    width: 22px;
+    height: 22px;
+    background: rgba(0,0,0,0.7);
+    border: none;
+    border-radius: 50%;
+    color: #fff;
+    font-size: 13px;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.15s;
+    z-index: 2;
+    padding: 0;
+  }
+
+  .card:hover .card-remove,
+  .card:focus-within .card-remove { opacity: 1; }
+
+  /* touch long-press show remove */
+  .card.show-remove .card-remove { opacity: 1; }
+
+  /* ── EMPTY STATE ── */
+  .empty-tier {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text2);
+    font-size: 13px;
+    font-style: italic;
+    min-height: 44px;
+    width: 100%;
+    grid-column: 1 / -1;
+  }
+
+  /* ── LOADING SPINNER ── */
+  .spinner {
+    display: none;
+    width: 20px;
+    height: 20px;
+    border: 2.5px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    margin: 0 auto;
+  }
+
+  .spinner.active { display: block; }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── TOAST ── */
+  .toast {
+    position: fixed;
+    bottom: calc(20px + var(--safe-bottom));
+    left: 50%;
+    transform: translateX(-50%) translateY(80px);
+    background: var(--text);
+    color: var(--bg);
+    padding: 10px 20px;
+    border-radius: 30px;
+    font-size: 14px;
+    font-weight: 500;
+    white-space: nowrap;
+    transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1);
+    z-index: 999;
+    pointer-events: none;
+  }
+
+  .toast.show { transform: translateX(-50%) translateY(0); }
+
+  /* ── DRAG GHOST ── */
+  #drag-ghost {
+    position: fixed;
+    pointer-events: none;
+    z-index: 1000;
+    opacity: 0.85;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.35);
+    display: none;
+  }
+
+  /* ── TIER COLOR ACCENTS ── */
+  [data-tier="S"] .tier-badge { color: var(--tier-s); }
+  [data-tier="A"] .tier-badge { color: var(--tier-a); }
+  [data-tier="B"] .tier-badge { color: var(--tier-b); }
+  [data-tier="C"] .tier-badge { color: var(--tier-c); }
+  [data-tier="D"] .tier-badge { color: var(--tier-d); }
+  [data-tier="F"] .tier-badge { color: var(--tier-f); }
+  [data-tier="READING"] .tier-badge { color: var(--tier-reading); }
+  [data-tier="TBR"] .tier-badge { color: var(--tier-tbr); }
+
+  [data-tier="S"] .tier-header { border-left: 4px solid var(--tier-s); }
+  [data-tier="A"] .tier-header { border-left: 4px solid var(--tier-a); }
+  [data-tier="B"] .tier-header { border-left: 4px solid var(--tier-b); }
+  [data-tier="C"] .tier-header { border-left: 4px solid var(--tier-c); }
+  [data-tier="D"] .tier-header { border-left: 4px solid var(--tier-d); }
+  [data-tier="F"] .tier-header { border-left: 4px solid var(--tier-f); }
+  [data-tier="READING"] .tier-header { border-left: 4px solid var(--tier-reading); }
+  [data-tier="TBR"] .tier-header { border-left: 4px solid var(--tier-tbr); }
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <div class="app-title">TIER<span>LIST</span></div>
+  </header>
+
+  <div class="tabs">
+    <button class="tab active" data-tab="books">📚 BOOKS</button>
+    <button class="tab" data-tab="movies">🎬 MOVIES</button>
+  </div>
+
+  <div class="search-wrap">
+    <div class="search-row">
+      <input class="search-input" type="text" id="search-input" placeholder="Search title..." autocomplete="off" autocorrect="off" spellcheck="false">
+      <button class="search-btn" id="search-btn">FIND</button>
+    </div>
+  </div>
+
+  <div class="results-drawer" id="results-drawer">
+    <div class="results-header">
+      <span id="results-label">PICK A COVER</span>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div class="spinner" id="spinner"></div>
+        <button class="results-close" id="results-close">✕</button>
+      </div>
+    </div>
+    <div class="results-scroll" id="results-scroll"></div>
+  </div>
+
+  <!-- BOOKS TAB -->
+  <div class="tier-list" id="tab-books">
+    <!-- tiers injected by JS -->
+  </div>
+
+  <!-- MOVIES TAB -->
+  <div class="tier-list" id="tab-movies" style="display:none;">
+    <!-- tiers injected by JS -->
+  </div>
+</div>
+
+<!-- Drag ghost -->
+<div id="drag-ghost"></div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ── CONFIG ──────────────────────────────────────────────────
+const TMDB_TOKEN = 'eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiI0ZmJkMzBlYzM4YzgxZmRmZTk2NWViNDlmOGU2OWNjYSIsIm5iZiI6MTc3NzU5NDI2OC4zNCwic3ViIjoiNjlmM2VmOWM1OGY1YzAyZjA2ZjlmOTM5Iiwic2NvcGVzIjpbImFwaV9yZWFkIl0sInZlcnNpb24iOjF9.rzdsX57HKODBDGITKin9Dnxl2G2OkpYbnvGxpwLAM9I';
+
+const BOOK_TIERS = [
+  { id: 'S', label: 'All-Time Favorite' },
+  { id: 'A', label: 'Excellent' },
+  { id: 'B', label: 'Really Good' },
+  { id: 'C', label: 'Decent' },
+  { id: 'D', label: 'Disappointing' },
+  { id: 'F', label: 'Did Not Finish / Awful' },
+  { id: 'READING', label: 'Currently Reading', badge: '📖' },
+  { id: 'TBR', label: 'To Be Read', badge: '📥' },
+];
+
+const MOVIE_TIERS = [
+  { id: 'S', label: 'All-Time Favorite' },
+  { id: 'A', label: 'Excellent' },
+  { id: 'B', label: 'Really Good' },
+  { id: 'C', label: 'Decent' },
+  { id: 'D', label: 'Disappointing' },
+  { id: 'F', label: 'Terrible' },
+];
+
+// ── STATE ────────────────────────────────────────────────────
+let activeTab = 'books';
+let data = { books: {}, movies: {} };
+let searchResults = [];
+let dragItem = null;
+let dragSource = null;
+let ghostEl = null;
+let touchOffset = { x: 0, y: 0 };
+
+// ── STORAGE ──────────────────────────────────────────────────
+function save() {
+  try { localStorage.setItem('tierlist_v2', JSON.stringify(data)); } catch(e) {}
+}
+
+function load() {
+  try {
+    const raw = localStorage.getItem('tierlist_v2');
+    if (raw) data = JSON.parse(raw);
+  } catch(e) {}
+  // init missing keys
+  const allTiers = [...BOOK_TIERS.map(t=>t.id), ...MOVIE_TIERS.map(t=>t.id)];
+  allTiers.forEach(id => {
+    if (!data.books[id]) data.books[id] = [];
+    if (!data.movies[id]) data.movies[id] = [];
+  });
+}
+
+// ── RENDER ───────────────────────────────────────────────────
+function renderAll() {
+  renderTab('books', BOOK_TIERS, document.getElementById('tab-books'));
+  renderTab('movies', MOVIE_TIERS, document.getElementById('tab-movies'));
+}
+
+function renderTab(type, tiers, container) {
+  container.innerHTML = '';
+  tiers.forEach(tier => {
+    const items = (data[type][tier.id] || []);
+    const block = document.createElement('div');
+    block.className = 'tier-block';
+    block.dataset.tier = tier.id;
+
+    const badgeText = tier.badge || tier.id;
+    block.innerHTML = `
+      <div class="tier-header">
+        <span class="tier-badge">${badgeText}</span>
+        <span class="tier-label">${tier.label}</span>
+        <span class="tier-count">${items.length}</span>
+      </div>
+      <div class="tier-grid" data-type="${type}" data-tier="${tier.id}"></div>
+    `;
+
+    const grid = block.querySelector('.tier-grid');
+    setupDropZone(grid);
+
+    if (items.length === 0) {
+      const empty = document.createElement('div');
+      empty.className = 'empty-tier';
+      empty.textContent = 'Drop here';
+      grid.appendChild(empty);
+    } else {
+      items.forEach(item => {
+        grid.appendChild(createCard(item, type, tier.id));
+      });
+    }
+
+    container.appendChild(block);
+  });
+}
+
+function createCard(item, type, tierId) {
+  const card = document.createElement('div');
+  card.className = 'card';
+  card.dataset.id = item.id;
+  card.dataset.type = type;
+  card.dataset.tier = tierId;
+
+  if (item.cover) {
+    const img = document.createElement('img');
+    img.src = item.cover;
+    img.alt = item.title;
+    img.loading = 'lazy';
+    card.appendChild(img);
+  } else {
+    const ph = document.createElement('div');
+    ph.className = 'card-no-img';
+    ph.textContent = type === 'books' ? '📚' : '🎬';
+    card.appendChild(ph);
+  }
+
+  const removeBtn = document.createElement('button');
+  removeBtn.className = 'card-remove';
+  removeBtn.textContent = '✕';
+  removeBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    removeItem(type, tierId, item.id);
+  });
+  card.appendChild(removeBtn);
+
+  // Long press to show remove on mobile
+  let pressTimer;
+  card.addEventListener('touchstart', () => {
+    pressTimer = setTimeout(() => {
+      card.classList.toggle('show-remove');
+    }, 500);
+  }, { passive: true });
+  card.addEventListener('touchend', () => clearTimeout(pressTimer), { passive: true });
+
+  setupDrag(card, item, type, tierId);
+  return card;
+}
+
+// ── DRAG & DROP (Touch + Mouse) ───────────────────────────────
+function setupDrag(card, item, type, tierId) {
+  // Mouse
+  card.addEventListener('mousedown', (e) => {
+    if (e.target.classList.contains('card-remove')) return;
+    startDrag(e.clientX, e.clientY, card, item, type, tierId, false);
+  });
+
+  // Touch
+  card.addEventListener('touchstart', (e) => {
+    if (e.target.classList.contains('card-remove')) return;
+    const t = e.touches[0];
+    startDrag(t.clientX, t.clientY, card, item, type, tierId, true);
+  }, { passive: true });
+}
+
+function startDrag(x, y, card, item, type, tierId, isTouch) {
+  dragItem = { item, type, tierId };
+  dragSource = card;
+
+  const rect = card.getBoundingClientRect();
+  touchOffset.x = x - rect.left;
+  touchOffset.y = y - rect.top;
+
+  // Build ghost
+  ghostEl = document.getElementById('drag-ghost');
+  ghostEl.innerHTML = '';
+  ghostEl.style.width = rect.width + 'px';
+  ghostEl.style.height = rect.height + 'px';
+  if (item.cover) {
+    const img = document.createElement('img');
+    img.src = item.cover;
+    img.style.cssText = 'width:100%;height:100%;object-fit:cover;';
+    ghostEl.appendChild(img);
+  } else {
+    ghostEl.style.background = 'var(--surface2)';
+    ghostEl.style.fontSize = '24px';
+    ghostEl.style.display = 'flex';
+    ghostEl.style.alignItems = 'center';
+    ghostEl.style.justifyContent = 'center';
+    ghostEl.textContent = type === 'books' ? '📚' : '🎬';
+  }
+  ghostEl.style.display = 'block';
+  moveGhost(x, y);
+  card.classList.add('dragging');
+
+  if (isTouch) {
+    document.addEventListener('touchmove', onTouchMove, { passive: false });
+    document.addEventListener('touchend', onTouchEnd, { once: true });
+  } else {
+    document.addEventListener('mousemove', onMouseMove);
+    document.addEventListener('mouseup', onMouseUp, { once: true });
+  }
+}
+
+function moveGhost(x, y) {
+  ghostEl.style.left = (x - touchOffset.x) + 'px';
+  ghostEl.style.top = (y - touchOffset.y) + 'px';
+}
+
+function onMouseMove(e) { moveGhost(e.clientX, e.clientY); }
+function onTouchMove(e) {
+  e.preventDefault();
+  const t = e.touches[0];
+  moveGhost(t.clientX, t.clientY);
+  highlightDropZone(t.clientX, t.clientY);
+}
+
+function onMouseUp(e) {
+  document.removeEventListener('mousemove', onMouseMove);
+  endDrag(e.clientX, e.clientY);
+}
+
+function onTouchEnd(e) {
+  document.removeEventListener('touchmove', onTouchMove);
+  const t = e.changedTouches[0];
+  endDrag(t.clientX, t.clientY);
+  clearHighlights();
+}
+
+function highlightDropZone(x, y) {
+  document.querySelectorAll('.tier-grid').forEach(g => g.classList.remove('drag-over'));
+  const el = document.elementFromPoint(x, y);
+  const zone = el?.closest('.tier-grid');
+  if (zone && zone.dataset.type === dragItem?.type) zone.classList.add('drag-over');
+}
+
+function clearHighlights() {
+  document.querySelectorAll('.tier-grid').forEach(g => g.classList.remove('drag-over'));
+}
+
+function endDrag(x, y) {
+  ghostEl.style.display = 'none';
+  if (dragSource) dragSource.classList.remove('dragging');
+
+  const el = document.elementFromPoint(x, y);
+  const zone = el?.closest('.tier-grid');
+
+  if (zone && dragItem) {
+    const newType = zone.dataset.type;
+    const newTier = zone.dataset.tier;
+    if (newType === dragItem.type && newTier !== dragItem.tierId) {
+      moveItem(dragItem.type, dragItem.tierId, dragItem.item.id, newTier);
+    }
+  }
+
+  dragItem = null;
+  dragSource = null;
+  clearHighlights();
+}
+
+function setupDropZone(grid) {
+  // Mouse drop
+  grid.addEventListener('dragover', (e) => e.preventDefault());
+}
+
+function moveItem(type, fromTier, itemId, toTier) {
+  const fromList = data[type][fromTier];
+  const idx = fromList.findIndex(i => i.id === itemId);
+  if (idx === -1) return;
+  const [item] = fromList.splice(idx, 1);
+  data[type][toTier].push(item);
+  save();
+  renderAll();
+  showToast(`Moved to ${toTier}`);
+}
+
+function removeItem(type, tierId, itemId) {
+  data[type][tierId] = data[type][tierId].filter(i => i.id !== itemId);
+  save();
+  renderAll();
+}
+
+// ── SEARCH ───────────────────────────────────────────────────
+document.getElementById('search-btn').addEventListener('click', doSearch);
+document.getElementById('search-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') doSearch();
+});
+
+async function doSearch() {
+  const q = document.getElementById('search-input').value.trim();
+  if (!q) return;
+
+  const drawer = document.getElementById('results-drawer');
+  const scroll = document.getElementById('results-scroll');
+  const spinner = document.getElementById('spinner');
+  const label = document.getElementById('results-label');
+
+  scroll.innerHTML = '';
+  spinner.classList.add('active');
+  drawer.classList.add('open');
+  label.textContent = activeTab === 'books' ? 'PICK A BOOK COVER' : 'PICK A MOVIE POSTER';
+
+  try {
+    if (activeTab === 'books') {
+      searchResults = await searchBooks(q);
+    } else {
+      searchResults = await searchMovies(q);
+    }
+
+    spinner.classList.remove('active');
+
+    if (searchResults.length === 0) {
+      scroll.innerHTML = '<div style="padding:16px;color:var(--text2);font-size:14px;">No results found.</div>';
+      return;
+    }
+
+    searchResults.forEach(item => {
+      const el = document.createElement('div');
+      el.className = 'result-item';
+
+      if (item.cover) {
+        const img = document.createElement('img');
+        img.className = 'result-cover';
+        img.src = item.cover;
+        img.alt = item.title;
+        img.loading = 'lazy';
+        el.appendChild(img);
+      } else {
+        const ph = document.createElement('div');
+        ph.className = 'result-cover-placeholder';
+        ph.textContent = activeTab === 'books' ? '📚' : '🎬';
+        el.appendChild(ph);
+      }
+
+      const title = document.createElement('div');
+      title.className = 'result-title';
+      title.textContent = item.title;
+      el.appendChild(title);
+
+      el.addEventListener('click', () => addItem(item));
+      scroll.appendChild(el);
+    });
+  } catch(err) {
+    spinner.classList.remove('active');
+    scroll.innerHTML = '<div style="padding:16px;color:var(--text2);font-size:14px;">Search failed. Check your connection.</div>';
+  }
+}
+
+async function searchBooks(q) {
+  const url = `https://openlibrary.org/search.json?q=${encodeURIComponent(q)}&limit=12&fields=key,title,cover_i,author_name`;
+  const res = await fetch(url);
+  const json = await res.json();
+  return (json.docs || []).map(doc => ({
+    id: doc.key || String(Math.random()),
+    title: doc.title || 'Unknown',
+    cover: doc.cover_i ? `https://covers.openlibrary.org/b/id/${doc.cover_i}-M.jpg` : null
+  })).filter(Boolean);
+}
+
+async function searchMovies(q) {
+  if (!TMDB_TOKEN || TMDB_TOKEN === 'YOUR_TMDB_READ_ACCESS_TOKEN_HERE') {
+    showToast('Add your TMDB token to the app!');
+    return [];
+  }
+  const url = `https://api.themoviedb.org/3/search/movie?query=${encodeURIComponent(q)}&include_adult=false&language=en-US&page=1`;
+  const res = await fetch(url, {
+    headers: { Authorization: `Bearer ${TMDB_TOKEN}`, 'Content-Type': 'application/json' }
+  });
+  const json = await res.json();
+  return (json.results || []).slice(0, 12).map(m => ({
+    id: String(m.id),
+    title: m.title || 'Unknown',
+    cover: m.poster_path ? `https://image.tmdb.org/t/p/w185${m.poster_path}` : null
+  }));
+}
+
+function addItem(item) {
+  // Default tier: TBR for books, unranked (S) for movies — actually put in TBR/S
+  const defaultTier = activeTab === 'books' ? 'TBR' : 'S';
+
+  // Check if already exists anywhere
+  const allTiers = activeTab === 'books' ? BOOK_TIERS : MOVIE_TIERS;
+  const alreadyExists = allTiers.some(t => 
+    (data[activeTab][t.id] || []).some(i => i.id === item.id)
+  );
+
+  if (alreadyExists) {
+    showToast('Already in your list!');
+    return;
+  }
+
+  data[activeTab][defaultTier].push(item);
+  save();
+  renderAll();
+
+  // Close drawer
+  document.getElementById('results-drawer').classList.remove('open');
+  document.getElementById('search-input').value = '';
+
+  const tierLabel = activeTab === 'books' ? 'To Be Read' : 'S Tier';
+  showToast(`Added to ${tierLabel} → drag to move`);
+}
+
+// ── CLOSE DRAWER ─────────────────────────────────────────────
+document.getElementById('results-close').addEventListener('click', () => {
+  document.getElementById('results-drawer').classList.remove('open');
+});
+
+// ── TABS ─────────────────────────────────────────────────────
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    activeTab = tab.dataset.tab;
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById('tab-books').style.display = activeTab === 'books' ? '' : 'none';
+    document.getElementById('tab-movies').style.display = activeTab === 'movies' ? '' : 'none';
+    document.getElementById('results-drawer').classList.remove('open');
+    document.getElementById('search-input').value = '';
+    document.getElementById('search-input').placeholder = activeTab === 'books' ? 'Search book title...' : 'Search movie title...';
+  });
+});
+
+// ── TOAST ─────────────────────────────────────────────────────
+let toastTimer;
+function showToast(msg) {
+  const toast = document.getElementById('toast');
+  toast.textContent = msg;
+  toast.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => toast.classList.remove('show'), 2200);
+}
+
+// ── INIT ─────────────────────────────────────────────────────
+load();
+renderAll();
+</script>
+</body>
+</html>
